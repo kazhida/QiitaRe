@@ -18,6 +18,7 @@ import kotlinx.serialization.json.Json
 import org.publicvalue.multiplatform.oidc.flows.AuthCodeResult
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class QiitaRepositoryTest {
@@ -148,7 +149,7 @@ class QiitaRepositoryTest {
     }
 
     private suspend fun awaitTerminalState(flow: StateFlow<QiitaRepository.QiitaAuthState>): QiitaRepository.QiitaAuthState {
-        withTimeout(5_000) {
+        withTimeout(5_000.milliseconds) {
             while (true) {
                 when (flow.value) {
                     is QiitaRepository.QiitaAuthState.Authenticated,

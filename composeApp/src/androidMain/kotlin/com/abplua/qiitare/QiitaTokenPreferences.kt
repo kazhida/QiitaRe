@@ -1,14 +1,15 @@
 package com.abplua.qiitare
 
 import android.content.Context
+import androidx.core.content.edit
 
 class QiitaTokenPreferences(context: Context) {
     private val preferences = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
     fun saveAccessToken(accessToken: String) {
-        preferences.edit()
-            .putString(KEY_ACCESS_TOKEN, accessToken)
-            .apply()
+        preferences.edit {
+            putString(KEY_ACCESS_TOKEN, accessToken)
+        }
     }
 
     fun getAccessToken(): String? {

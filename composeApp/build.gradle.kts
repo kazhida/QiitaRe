@@ -1,4 +1,3 @@
-import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -24,12 +23,11 @@ kotlin {
             isStatic = true
         }
     }
-    val ktorVersion = "3.0.0"
     sourceSets {
         androidMain.dependencies {
             implementation(libs.compose.uiToolingPreview)
             implementation(libs.androidx.activity.compose)
-            implementation("io.ktor:ktor-client-okhttp:${ktorVersion}")
+            implementation(libs.ktor.client.okhttp)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
@@ -42,6 +40,7 @@ kotlin {
             implementation(libs.coil.network.ktor3)
             implementation(libs.oidc.appsupport)
             implementation(libs.oidc.ktor)
+            implementation(libs.oidc.preferences)
             implementation(libs.androidx.lifecycle.viewmodelCompose)
             implementation(libs.androidx.lifecycle.runtimeCompose)
             implementation(libs.ktor.client.core)

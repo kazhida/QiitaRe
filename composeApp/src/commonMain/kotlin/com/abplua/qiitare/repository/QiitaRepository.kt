@@ -23,8 +23,11 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import org.publicvalue.multiplatform.oidc.OpenIdConnectClient
-import org.publicvalue.multiplatform.oidc.appsupport.CodeAuthFlowFactory
+import org.publicvalue.multiplatform.oidc.appsupport.PlatformCodeAuthFlow
 import org.publicvalue.multiplatform.oidc.flows.AuthCodeResult
+import org.publicvalue.multiplatform.oidc.flows.CodeAuthFlowFactory
+import org.publicvalue.multiplatform.oidc.preferences.clearOidcPreferences
+import org.publicvalue.multiplatform.oidc.preferences.getResponseUri
 import org.publicvalue.multiplatform.oidc.types.AuthCodeRequest
 import org.publicvalue.multiplatform.oidc.types.CodeChallengeMethod
 import org.publicvalue.multiplatform.oidc.types.validateState
@@ -42,17 +45,21 @@ class QiitaRepository(
 
         scope.launch {
             val oidcClient = createOidcClient()
-            val authCodeRequest = oidcClient.createAuthorizationCodeRequest()
-
-            val authCodeResult = runCatching {
-                authorizationCodeProvider?.invoke(oidcClient, authCodeRequest)
-                    ?: requestAuthorizationCode(oidcClient, authCodeRequest)
+            val authCodePair = runCatching {
+                if (authorizationCodeProvider != null) {
+                    val authCodeRequest = oidcClient.createAuthorizationCodeRequest()
+                    authCodeRequest to authorizationCodeProvider.invoke(oidcClient, authCodeRequest)
+                } else {
+                    requestAuthorizationCode(oidcClient)
+                }
             }.getOrElse { error ->
                 state.value = QiitaAuthState.Failed(
                     error.message ?: "Qiita authorization failed."
                 )
                 return@launch
             }
+
+            val (authCodeRequest, authCodeResult) = authCodePair
 
             if (!authCodeRequest.validateState(authCodeResult.state ?: "")) {
                 state.value = QiitaAuthState.Failed("Qiita redirect state mismatch.")
@@ -91,11 +98,20 @@ class QiitaRepository(
 
     private suspend fun requestAuthorizationCode(
         client: OpenIdConnectClient,
-        request: AuthCodeRequest,
-    ): AuthCodeResult {
+    ): Pair<AuthCodeRequest, AuthCodeResult> {
         val flowFactory = codeAuthFlowFactory
             ?: throw IllegalStateException("No CodeAuthFlowFactory configured.")
-        return flowFactory.createAuthFlow(client).getAuthorizationCode(request).getOrThrow()
+        val flow = flowFactory.createAuthFlow(client) as PlatformCodeAuthFlow
+        val request = flow.startLogin()
+
+        val responseUri = flow.preferences.getResponseUri()
+            ?: throw IllegalStateException("Qiita redirect URI was not captured.")
+        flow.preferences.clearOidcPreferences()
+
+        return request to AuthCodeResult(
+            code = responseUri.parameters["code"],
+            state = responseUri.parameters["state"],
+        )
     }
 
     private suspend fun exchangeCodeForAccessToken(code: String): String {

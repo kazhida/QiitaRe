@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.abplua.qiitare.data.models.Item
+import com.abplua.qiitare.data.models.Tag
 
 @Composable fun ItemItem(item: Item) {
     Column {
@@ -15,7 +16,16 @@ import com.abplua.qiitare.data.models.Item
             UserIcon(
                 item.user.profile_image_url,
             )
-
+            Column {
+                Text(
+                    text = item.user.name ?: "",
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+                Text(
+                    text = item.updated_at,
+                    modifier = Modifier.padding(start = 8.dp)
+                )
+            }
         }
 
         Text(
@@ -23,6 +33,10 @@ import com.abplua.qiitare.data.models.Item
             modifier = Modifier.padding(start = 8.dp)
         )
 
-
+        Row {
+            item.tags.forEach { tag ->
+                Tag(tag.name)
+            }
+        }
     }
 }

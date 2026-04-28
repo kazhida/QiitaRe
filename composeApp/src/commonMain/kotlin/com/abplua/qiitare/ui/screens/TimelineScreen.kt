@@ -26,11 +26,17 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.abplua.qiitare.data.models.Item
+import com.abplua.qiitare.ui.components.ItemList
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TimelineScreen() {
+fun TimelineScreen(
+    itemFlow: StateFlow<List<Item>>,
+    onLoadMore: () -> Unit,
+) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
 
@@ -109,10 +115,10 @@ fun TimelineScreen() {
                 )
             },
         ) { paddingValues ->
-            ListItem(
-                headlineContent = { Text("No items yet") },
-                supportingContent = { Text("Fetched Qiita items will appear here.") },
+            ItemList(
+                itemFlow = itemFlow,
                 modifier = Modifier.padding(paddingValues),
+                onLoadMore = onLoadMore,
             )
         }
     }

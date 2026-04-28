@@ -1,4 +1,4 @@
-package com.abplua.qiitare.repository
+package com.abplua.qiitare.data.repositories
 
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -32,7 +32,7 @@ import org.publicvalue.multiplatform.oidc.types.AuthCodeRequest
 import org.publicvalue.multiplatform.oidc.types.CodeChallengeMethod
 import org.publicvalue.multiplatform.oidc.types.validateState
 
-class QiitaRepository(
+class AuthRepository(
     private val httpClient: HttpClient = defaultHttpClient(),
     private val codeAuthFlowFactory: CodeAuthFlowFactory? = null,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),

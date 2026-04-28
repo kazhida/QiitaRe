@@ -1,5 +1,6 @@
 package com.abplua.qiitare.repository
 
+import com.abplua.qiitare.data.repositories.AuthRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.runTest
@@ -12,7 +13,7 @@ import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class QiitaRepositoryLiveTest {
+class AuthRepositoryLiveTest {
 
     @Test
     fun authenticateAsync_exchangesActualAuthorizationCode() = runTest {
@@ -22,7 +23,7 @@ class QiitaRepositoryLiveTest {
             !authorizationCode.isNullOrBlank()
         )
 
-        val repository = QiitaRepository(
+        val repository = AuthRepository(
             scope = this,
             authorizationCodeProvider = { _, request ->
                 AuthCodeResult(code = authorizationCode, state = request.state)
@@ -33,17 +34,17 @@ class QiitaRepositoryLiveTest {
 
         val terminalState = awaitTerminalState(flow)
         assertTrue(
-            terminalState is QiitaRepository.QiitaAuthState.Authenticated,
+            terminalState is AuthRepository.QiitaAuthState.Authenticated,
             "Expected Authenticated but was $terminalState"
         )
     }
 
-    private suspend fun awaitTerminalState(flow: StateFlow<QiitaRepository.QiitaAuthState>): QiitaRepository.QiitaAuthState {
+    private suspend fun awaitTerminalState(flow: StateFlow<AuthRepository.QiitaAuthState>): AuthRepository.QiitaAuthState {
         withTimeout(10_000.milliseconds) {
             while (true) {
                 when (flow.value) {
-                    is QiitaRepository.QiitaAuthState.Authenticated,
-                    is QiitaRepository.QiitaAuthState.Failed -> return@withTimeout
+                    is AuthRepository.QiitaAuthState.Authenticated,
+                    is AuthRepository.QiitaAuthState.Failed -> return@withTimeout
                     else -> yield()
                 }
             }

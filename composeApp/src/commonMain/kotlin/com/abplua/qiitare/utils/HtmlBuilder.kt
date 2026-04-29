@@ -1,16 +1,16 @@
 package com.abplua.qiitare.utils
 
-import com.abplua.qiitare.data.models.Item
+import com.abplua.qiitare.data.models.Article
 import com.abplua.qiitare.data.models.Tag
 import com.abplua.qiitare.data.models.User
 
 class HtmlBuilder(
-    private val item: Item?,
+    private val article: Article?,
 ) {
     fun build(): String = buildString {
         append(header())
 
-        item?.let { item ->
+        article?.let { item ->
             append(articleHeader(item))
             append("<div class=\"container\">")
             append(item.rendered_body)
@@ -177,29 +177,29 @@ class HtmlBuilder(
 
     private fun footer(): String = "</body></html>"
 
-    private fun articleHeader(item: Item): String = buildString {
+    private fun articleHeader(article: Article): String = buildString {
         append("<header class=\"article-header\">")
         append("<div class=\"article-title-row\">")
         append("<img class=\"profile-icon\" src=\"")
-        append(item.user.profile_image_url.escapeHtmlAttribute())
+        append(article.user.profile_image_url.escapeHtmlAttribute())
         append("\" alt=\"\">")
         append("<h1 class=\"item-title\">")
-        append(item.title.escapeHtml())
+        append(article.title.escapeHtml())
         append("</h1>")
         append("</div>")
 
-        if (item.tags.isNotEmpty()) {
+        if (article.tags.isNotEmpty()) {
             append("<p class=\"tags\">")
-            item.tags.forEach { tag ->
+            article.tags.forEach { tag ->
                 append(tag.toHtml())
             }
             append("</p>")
         }
 
         append("<p class=\"article-description\">")
-        append(item.user.displayName.escapeHtml())
+        append(article.user.displayName.escapeHtml())
         append(" posted at ")
-        append(item.created_at.take(10).escapeHtml())
+        append(article.created_at.take(10).escapeHtml())
         append("</p>")
         append("</header>")
     }

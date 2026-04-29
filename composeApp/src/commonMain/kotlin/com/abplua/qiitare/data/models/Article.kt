@@ -3,7 +3,7 @@ package com.abplua.qiitare.data.models
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Item(
+data class Article(
     val rendered_body: String,
     // HTML形式の本文 Example: "<h1>Example</h1>"
     val body: String,

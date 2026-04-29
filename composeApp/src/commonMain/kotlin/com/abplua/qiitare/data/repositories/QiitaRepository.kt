@@ -2,7 +2,7 @@ package com.abplua.qiitare.data.repositories
 
 import com.abplua.qiitare.data.models.AuthenticatedUser
 import com.abplua.qiitare.data.models.FollowingTag
-import com.abplua.qiitare.data.models.Item
+import com.abplua.qiitare.data.models.Article
 import com.abplua.qiitare.data.models.User
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -21,7 +21,7 @@ class QiitaRepository(
     private val baseUrl: String = BASE_URL,
 ) {
 
-    suspend fun getItems(page: Int = 1, perPage: Int = 20, query: String? = null): List<Item> {
+    suspend fun getItems(page: Int = 1, perPage: Int = 20, query: String? = null): List<Article> {
         require(page in 1..100) { "page must be between 1 and 100." }
         require(perPage in 1..100) { "perPage must be between 1 and 100." }
 
@@ -42,7 +42,7 @@ class QiitaRepository(
             )
         }
 
-        return response.body<List<Item>>()
+        return response.body<List<Article>>()
     }
 
     suspend fun getAuthenticatedUser(accessToken: String): AuthenticatedUser {

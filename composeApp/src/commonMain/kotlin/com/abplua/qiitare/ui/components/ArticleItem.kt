@@ -1,5 +1,6 @@
 package com.abplua.qiitare.ui.components
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,24 +15,31 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.abplua.qiitare.data.models.Item
+import com.abplua.qiitare.data.models.Article
 import com.abplua.qiitare.data.models.Tag
 
-@Composable fun ItemItem(item: Item) {
-    Card(colors = CardDefaults.cardColors(containerColor = Color.White)) {
+@Composable
+fun ItemItem(
+    article: Article,
+    onClick: (Article) -> Unit = {},
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        onClick = { onClick(article) },
+    ) {
         Column(modifier = Modifier.padding(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 UserIcon(
-                    item.user.profile_image_url,
+                    article.user.profile_image_url,
                 )
                 Column {
                     Text(
-                        text = item.user.name ?: "",
+                        text = article.user.name ?: "",
                         modifier = Modifier.padding(start = 8.dp),
                         color = Color.Gray
                     )
                     Text(
-                        text = item.updated_at.substring(0, 10),
+                        text = article.updated_at.substring(0, 10),
                         modifier = Modifier.padding(start = 8.dp),
                         color = Color.Gray,
                         fontSize = 9.sp,
@@ -42,12 +50,12 @@ import com.abplua.qiitare.data.models.Tag
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = item.title,
-                modifier = Modifier.padding(start = 8.dp)
+                text = article.title,
+                modifier = Modifier.padding(start = 8.dp).clickable { onClick(article) },
             )
 
             Row {
-                item.tags.forEach { tag ->
+                article.tags.forEach { tag ->
                     Tag(tag.name)
                 }
             }

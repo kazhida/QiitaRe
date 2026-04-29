@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocalOffer
@@ -41,7 +42,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.abplua.qiitare.data.models.AuthenticatedUser
-import com.abplua.qiitare.data.models.Item
+import com.abplua.qiitare.data.models.Article
 import com.abplua.qiitare.ui.components.ItemList
 import com.abplua.qiitare.ui.components.ProfileHeader
 import kotlinx.coroutines.flow.StateFlow
@@ -51,7 +52,7 @@ import qiitare.composeapp.generated.resources.Res
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(
-    itemFlow: StateFlow<List<Item>>,
+    articleFlow: StateFlow<List<Article>>,
     authenticatedUserFlow: StateFlow<AuthenticatedUser?>,
     isRefreshingFlow: StateFlow<Boolean>,
     onRefresh: () -> Unit,
@@ -60,6 +61,7 @@ fun TimelineScreen(
     onShowFollowingTagItems: () -> Unit,
     onShowQueryItems: (String) -> Unit,
     onLicensesClick: () -> Unit,
+    onArticleClick: (Article) -> Unit,
 ) {
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
@@ -188,11 +190,12 @@ fun TimelineScreen(
                 },
             ) { paddingValues ->
                 ItemList(
-                    itemFlow = itemFlow,
+                    articleFlow = articleFlow,
                     isRefreshingFlow = isRefreshingFlow,
                     modifier = Modifier.padding(paddingValues).padding(16.dp),
                     onRefresh = onRefresh,
                     onLoadMore = onLoadMore,
+                    onArticleClick = onArticleClick,
                 )
             }
         }

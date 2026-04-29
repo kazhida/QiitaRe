@@ -15,7 +15,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.abplua.qiitare.data.models.Item
+import com.abplua.qiitare.data.models.Article
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.StateFlow
@@ -23,13 +23,14 @@ import kotlinx.coroutines.flow.StateFlow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ItemList(
-    itemFlow: StateFlow<List<Item>>,
+    articleFlow: StateFlow<List<Article>>,
     isRefreshingFlow: StateFlow<Boolean>,
     modifier: Modifier = Modifier,
     onRefresh: () -> Unit = {},
     onLoadMore: () -> Unit = {},
+    onArticleClick: (Article) -> Unit = {},
 ) {
-    val items by itemFlow.collectAsState()
+    val items by articleFlow.collectAsState()
     val isRefreshing by isRefreshingFlow.collectAsState()
     val gridState = rememberLazyStaggeredGridState()
 
@@ -62,7 +63,10 @@ fun ItemList(
                 items = items,
                 key = { item -> item.id },
             ) { item ->
-                ItemItem(item)
+                ItemItem(
+                    article = item,
+                    onClick = onArticleClick,
+                )
             }
         }
     }

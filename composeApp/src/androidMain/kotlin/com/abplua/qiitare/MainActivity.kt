@@ -6,16 +6,22 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.abplua.qiitare.data.models.AuthenticatedUser
-import com.abplua.qiitare.data.models.Item
+import com.abplua.qiitare.data.models.Article
 import com.abplua.qiitare.data.repositories.AuthRepository
 import com.abplua.qiitare.data.repositories.QiitaRepository
 import com.abplua.qiitare.ui.App
+import com.abplua.qiitare.ui.screens.ArticleScreen
 import com.abplua.qiitare.ui.screens.LicenseScreen
 import com.abplua.qiitare.ui.screens.TimelineScreen
 import dagger.hilt.android.AndroidEntryPoint
@@ -30,11 +36,12 @@ import org.publicvalue.multiplatform.oidc.appsupport.AndroidCodeAuthFlowFactory
 class MainActivity : ComponentActivity() {
     private object Route {
         const val TIMELINE = "timeline"
+        const val ARTICLE = "article"
         const val LICENSES = "licenses"
     }
 
     private val codeAuthFlowFactory = AndroidCodeAuthFlowFactory()
-    private val _items = MutableStateFlow<List<Item>>(emptyList())
+    private val _items = MutableStateFlow<List<Article>>(emptyList())
     private val items = _items.asStateFlow()
     private val _authenticatedUser = MutableStateFlow<AuthenticatedUser?>(null)
     private val authenticatedUser = _authenticatedUser.asStateFlow()
@@ -70,6 +77,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             val navController = rememberNavController()
+            var selectedArticle by remember { mutableStateOf<Article?>(null) }
 
             NavHost(
                 navController = navController,
@@ -77,7 +85,7 @@ class MainActivity : ComponentActivity() {
             ) {
                 composable(Route.TIMELINE) {
                     TimelineScreen(
-                        itemFlow = items,
+                        articleFlow = items,
                         authenticatedUserFlow = authenticatedUser,
                         isRefreshingFlow = isRefreshingItems,
                         onRefresh = ::refreshItems,
@@ -86,6 +94,24 @@ class MainActivity : ComponentActivity() {
                         onShowFollowingTagItems = ::showFollowingTagItems,
                         onShowQueryItems = ::showQueryItems,
                         onLicensesClick = { navController.navigate(Route.LICENSES) },
+                        onArticleClick = { article ->
+                            selectedArticle = article
+                            navController.navigate(Route.ARTICLE)
+                        },
+                    )
+                }
+                composable(Route.ARTICLE) {
+                    val article = selectedArticle
+                    if (article == null) {
+                        LaunchedEffect(Unit) {
+                            navController.popBackStack()
+                        }
+                        return@composable
+                    }
+
+                    ArticleScreen(
+                        article = article,
+                        onBackClick = { navController.popBackStack() },
                     )
                 }
                 composable(Route.LICENSES) {

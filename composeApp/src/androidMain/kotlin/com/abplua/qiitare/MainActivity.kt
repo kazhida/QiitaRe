@@ -6,16 +6,23 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
+import com.abplua.qiitare.data.models.AuthenticatedUser
 import com.abplua.qiitare.data.models.Item
 import com.abplua.qiitare.data.repositories.AuthRepository
 import com.abplua.qiitare.data.repositories.QiitaRepository
 import com.abplua.qiitare.ui.App
+import com.abplua.qiitare.ui.screens.LicenseScreen
 import com.abplua.qiitare.ui.screens.TimelineScreen
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import org.publicvalue.multiplatform.oidc.appsupport.AndroidCodeAuthFlowFactory
 
@@ -24,10 +31,18 @@ class MainActivity : ComponentActivity() {
     private val codeAuthFlowFactory = AndroidCodeAuthFlowFactory()
     private val _items = MutableStateFlow<List<Item>>(emptyList())
     private val items = _items.asStateFlow()
-    private var itemQuery: String? = null
+    private val _authenticatedUser = MutableStateFlow<AuthenticatedUser?>(null)
+    private val authenticatedUser = _authenticatedUser.asStateFlow()
+    private val _isRefreshingItems = MutableStateFlow(false)
+    private val isRefreshingItems = _isRefreshingItems.asStateFlow()
+    private val _itemQuery = MutableStateFlow<String?>(null)
+    private val itemQuery = _itemQuery.asStateFlow()
+    private var followeeItemQuery: String? = null
+    private var followingTagItemQuery: String? = null
     private var nextItemPage = 1
     private var isLoadingItems = false
-    private var isItemLastPage = false
+    private var isItemLastPage = true
+    private var isShowingLicenses by mutableStateOf(false)
     private lateinit var authRepository: AuthRepository
     private lateinit var qiitaRepository: QiitaRepository
     private lateinit var qiitaTokenPreferences: QiitaTokenPreferences
@@ -40,6 +55,7 @@ class MainActivity : ComponentActivity() {
         qiitaTokenPreferences = QiitaTokenPreferences(applicationContext)
         authRepository = AuthRepository(codeAuthFlowFactory = codeAuthFlowFactory)
         qiitaRepository = QiitaRepository()
+        observeItemQuery()
 
         val accessToken = qiitaTokenPreferences.getAccessToken()
         if (accessToken.isNullOrBlank()) {
@@ -49,10 +65,23 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            TimelineScreen(
-                itemFlow = items,
-                onLoadMore = ::loadNextItemPage,
-            )
+            if (isShowingLicenses) {
+                LicenseScreen(
+                    onBackClick = { isShowingLicenses = false },
+                )
+            } else {
+                TimelineScreen(
+                    itemFlow = items,
+                    authenticatedUserFlow = authenticatedUser,
+                    isRefreshingFlow = isRefreshingItems,
+                    onRefresh = ::refreshItems,
+                    onLoadMore = ::loadNextItemPage,
+                    onShowFolloweeItems = ::showFolloweeItems,
+                    onShowFollowingTagItems = ::showFollowingTagItems,
+                    onShowQueryItems = ::showQueryItems,
+                    onLicensesClick = { isShowingLicenses = true },
+                )
+            }
         }
     }
 
@@ -67,51 +96,102 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    private fun observeItemQuery() {
+        lifecycleScope.launch {
+            itemQuery.collectLatest { query ->
+                Log.d(TAG, "Item query changed: $query")
+                nextItemPage = 1
+                isLoadingItems = false
+                isItemLastPage = false
+                _items.value = emptyList()
+                loadNextItemPage(query)
+            }
+        }
+    }
+
     private fun loadItems(accessToken: String) {
         lifecycleScope.launch {
             runCatching {
                 val authenticatedUser = qiitaRepository.getAuthenticatedUser(accessToken)
+                _authenticatedUser.value = authenticatedUser
                 val followeeIds = getAllFolloweeIds(authenticatedUser.id)
                 val followingTagIds = getAllFollowingTagIds(authenticatedUser.id)
-                buildItemQuery(followeeIds = followeeIds, followingTagIds = followingTagIds)
-            }.onSuccess { query ->
-                itemQuery = query
-                nextItemPage = 1
-                isItemLastPage = query == null
-                _items.value = emptyList()
-                loadNextItemPage()
+                followeeItemQuery = buildFolloweeItemQuery(followeeIds)
+                followingTagItemQuery = buildFollowingTagItemQuery(followingTagIds)
+            }.onSuccess {
+                _itemQuery.value = null
             }.onFailure { error ->
                 Log.e(TAG, "Failed to get Qiita items.", error)
             }
         }
     }
 
+    private fun showFolloweeItems() {
+        _itemQuery.value = followeeItemQuery
+    }
+
+    private fun showFollowingTagItems() {
+        _itemQuery.value = followingTagItemQuery
+    }
+
+    private fun showQueryItems(query: String) {
+        _itemQuery.value = query.ifBlank { null }
+    }
+
     private fun loadNextItemPage() {
-        val query = itemQuery ?: return
-        if (isLoadingItems || isItemLastPage) return
+        lifecycleScope.launch {
+            loadNextItemPage(itemQuery.value)
+        }
+    }
+
+    private fun refreshItems() {
+        if (isLoadingItems) return
 
         lifecycleScope.launch {
-            isLoadingItems = true
-            runCatching {
-                qiitaRepository.getItems(
-                    page = nextItemPage,
-                    perPage = ITEMS_PER_PAGE,
-                    query = query,
-                )
-            }.onSuccess { newItems ->
-                if (newItems.isEmpty()) {
+            _isRefreshingItems.value = true
+            nextItemPage = 1
+            isItemLastPage = false
+            _items.value = emptyList()
+
+            try {
+                loadNextItemPage(itemQuery.value)
+            } finally {
+                _isRefreshingItems.value = false
+            }
+        }
+    }
+
+    private suspend fun loadNextItemPage(query: String?) {
+        if (isLoadingItems || isItemLastPage) return
+
+        isLoadingItems = true
+        try {
+            val newItems = qiitaRepository.getItems(
+                page = nextItemPage,
+                perPage = ITEMS_PER_PAGE,
+                query = query,
+            )
+            if (itemQuery.value != query) return
+
+            if (newItems.isEmpty()) {
+                isItemLastPage = true
+            } else {
+                _items.value = _items.value + newItems
+                nextItemPage += 1
+                if (newItems.size < ITEMS_PER_PAGE) {
                     isItemLastPage = true
-                } else {
-                    _items.value = _items.value + newItems
-                    nextItemPage += 1
-                    if (newItems.size < ITEMS_PER_PAGE) {
-                        isItemLastPage = true
-                    }
                 }
-            }.onFailure { error ->
+            }
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Throwable) {
+            if (itemQuery.value == query) {
                 Log.e(TAG, "Failed to get Qiita items.", error)
             }
-            isLoadingItems = false
+        } finally {
+            if (itemQuery.value == query) {
+                isLoadingItems = false
+            }
         }
     }
 
@@ -139,17 +219,18 @@ class MainActivity : ComponentActivity() {
         return followingTagIds
     }
 
-    private fun buildItemQuery(followeeIds: List<String>, followingTagIds: List<String>): String? {
-        return listOfNotNull(
-            followeeIds.takeIf { it.isNotEmpty() }?.joinToString(
-                separator = ",",
-                prefix = "user:",
-            ),
-            followingTagIds.takeIf { it.isNotEmpty() }?.joinToString(
-                separator = ",",
-                prefix = "tag:",
-            ),
-        ).joinToString(" ").ifBlank { null }
+    private fun buildFolloweeItemQuery(followeeIds: List<String>): String? {
+        return followeeIds.takeIf { it.isNotEmpty() }?.joinToString(
+            separator = ",",
+            prefix = "user:",
+        )
+    }
+
+    private fun buildFollowingTagItemQuery(followingTagIds: List<String>): String? {
+        return followingTagIds.takeIf { it.isNotEmpty() }?.joinToString(
+            separator = ",",
+            prefix = "tag:",
+        )
     }
 
     companion object {

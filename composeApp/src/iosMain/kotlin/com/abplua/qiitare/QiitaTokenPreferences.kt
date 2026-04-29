@@ -13,6 +13,10 @@ class QiitaTokenPreferences {
         return preferences.stringForKey(KEY_ACCESS_TOKEN)
     }
 
+    fun clearAccessToken() {
+        preferences.removeObjectForKey(KEY_ACCESS_TOKEN)
+    }
+
     companion object {
         private const val KEY_ACCESS_TOKEN = "access_token"
     }

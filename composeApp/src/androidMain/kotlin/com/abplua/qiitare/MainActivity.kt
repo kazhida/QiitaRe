@@ -26,9 +26,11 @@ import com.abplua.qiitare.ui.screens.LicenseScreen
 import com.abplua.qiitare.ui.screens.TimelineScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import org.publicvalue.multiplatform.oidc.appsupport.AndroidCodeAuthFlowFactory
 
@@ -54,6 +56,7 @@ class MainActivity : ComponentActivity() {
     private var nextItemPage = 1
     private var isLoadingItems = false
     private var isItemLastPage = true
+    private var authenticationJob: Job? = null
     private lateinit var authRepository: AuthRepository
     private lateinit var qiitaRepository: QiitaRepository
     private lateinit var qiitaTokenPreferences: QiitaTokenPreferences
@@ -124,12 +127,18 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun observeAuthentication() {
-        lifecycleScope.launch {
-            authRepository.authenticateAsync().collect { state ->
-                if (state is AuthRepository.QiitaAuthState.Authenticated) {
-                    qiitaTokenPreferences.saveAccessToken(state.accessToken)
-                    loadItems(state.accessToken)
-                }
+        if (authenticationJob?.isActive == true) return
+
+        authenticationJob = lifecycleScope.launch {
+            val state = authRepository.authenticateAsync().first {
+                it is AuthRepository.QiitaAuthState.Authenticated ||
+                    it is AuthRepository.QiitaAuthState.Failed
+            }
+            authenticationJob = null
+
+            if (state is AuthRepository.QiitaAuthState.Authenticated) {
+                qiitaTokenPreferences.saveAccessToken(state.accessToken)
+                loadItems(state.accessToken)
             }
         }
     }
@@ -159,9 +168,23 @@ class MainActivity : ComponentActivity() {
             }.onSuccess {
                 _itemQuery.value = null
             }.onFailure { error ->
-                Log.e(TAG, "Failed to get Qiita items.", error)
+                if (error is QiitaRepository.InvalidAccessTokenException) {
+                    handleInvalidAccessToken(error)
+                } else {
+                    Log.e(TAG, "Failed to get Qiita items.", error)
+                }
             }
         }
+    }
+
+    private fun handleInvalidAccessToken(error: QiitaRepository.InvalidAccessTokenException) {
+        Log.w(TAG, "Stored Qiita access token is invalid. Starting authentication again.", error)
+        qiitaTokenPreferences.clearAccessToken()
+        _authenticatedUser.value = null
+        _items.value = emptyList()
+        followeeItemQuery = null
+        followingTagItemQuery = null
+        observeAuthentication()
     }
 
     private fun showFolloweeItems() {

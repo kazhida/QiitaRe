@@ -2,6 +2,7 @@ package com.abplua.qiitare.utils
 
 import com.abplua.qiitare.data.models.Item
 import com.abplua.qiitare.data.models.Tag
+import com.abplua.qiitare.data.models.User
 
 class HtmlBuilder(
     private val item: Item?,
@@ -206,7 +207,7 @@ class HtmlBuilder(
     private fun Tag.toHtml(): String =
         "<span class=\"tag\">${name.escapeHtml()}</span>"
 
-    private val com.abplua.qiitare.data.models.User.displayName: String
+    private val User.displayName: String
         get() = name?.takeIf { it.isNotBlank() } ?: id
 
     private fun String.escapeHtml(): String = buildString(length) {

@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.kotlinKapt)
     alias(libs.plugins.hiltAndroid)
+    alias(libs.plugins.googleServices)
 }
 
 kotlin {
@@ -34,12 +35,14 @@ kotlin {
             implementation(libs.androidx.navigation.compose)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.hilt.android)
+            implementation(project.dependencies.platform(libs.firebase.bom))
+            implementation(libs.firebase.analytics)
         }
         commonMain.dependencies {
             implementation(libs.compose.runtime)
             implementation(libs.compose.foundation)
             implementation(libs.compose.material3)
-            implementation(compose.materialIconsExtended)
+            implementation(libs.compose.material.icons.extended)
             implementation(libs.compose.ui)
             implementation(libs.compose.components.resources)
             implementation(libs.compose.uiToolingPreview)
@@ -71,11 +74,11 @@ android {
     compileSdk = libs.versions.android.compileSdk.get().toInt()
 
     defaultConfig {
-        applicationId = "com.abplua.qiitare"
+        applicationId = "com.abplus.qiitare"
         minSdk = libs.versions.android.minSdk.get().toInt()
         targetSdk = libs.versions.android.targetSdk.get().toInt()
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.0.0"
         manifestPlaceholders["oidcRedirectScheme"] = "qiitare"
     }
     packaging {

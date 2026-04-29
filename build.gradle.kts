@@ -9,4 +9,5 @@ plugins {
     alias(libs.plugins.kotlinSerialization) apply false
     alias(libs.plugins.kotlinKapt) apply false
     alias(libs.plugins.hiltAndroid) apply false
+    alias(libs.plugins.googleServices) apply false
 }

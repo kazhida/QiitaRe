@@ -43,6 +43,7 @@ Notes:
 | AndroidX Lifecycle (`androidx.lifecycle:*`, `org.jetbrains.androidx.lifecycle:*`) | 2.10.0 | Apache License 2.0 | https://www.apache.org/licenses/LICENSE-2.0.txt |
 | AndroidX Loader (`androidx.loader:loader`) | 1.0.0 | Apache License 2.0 | https://www.apache.org/licenses/LICENSE-2.0.txt |
 | AndroidX LocalBroadcastManager (`androidx.localbroadcastmanager:localbroadcastmanager`) | 1.0.0 | Apache License 2.0 | https://www.apache.org/licenses/LICENSE-2.0.txt |
+| AndroidX Navigation (`androidx.navigation:*`) | 2.9.7 | Apache License 2.0 | https://www.apache.org/licenses/LICENSE-2.0.txt |
 | AndroidX NavigationEvent (`androidx.navigationevent:*`) | 1.0.0, 1.0.2 | Apache License 2.0 | https://www.apache.org/licenses/LICENSE-2.0.txt |
 | AndroidX Print (`androidx.print:print`) | 1.0.0 | Apache License 2.0 | https://www.apache.org/licenses/LICENSE-2.0.txt |
 | AndroidX ProfileInstaller (`androidx.profileinstaller:profileinstaller`) | 1.4.1 | Apache License 2.0 | https://www.apache.org/licenses/LICENSE-2.0.txt |

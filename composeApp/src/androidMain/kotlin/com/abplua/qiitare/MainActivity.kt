@@ -6,11 +6,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import com.abplua.qiitare.data.models.AuthenticatedUser
 import com.abplua.qiitare.data.models.Item
 import com.abplua.qiitare.data.repositories.AuthRepository
@@ -28,6 +28,11 @@ import org.publicvalue.multiplatform.oidc.appsupport.AndroidCodeAuthFlowFactory
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    private object Route {
+        const val TIMELINE = "timeline"
+        const val LICENSES = "licenses"
+    }
+
     private val codeAuthFlowFactory = AndroidCodeAuthFlowFactory()
     private val _items = MutableStateFlow<List<Item>>(emptyList())
     private val items = _items.asStateFlow()
@@ -42,7 +47,6 @@ class MainActivity : ComponentActivity() {
     private var nextItemPage = 1
     private var isLoadingItems = false
     private var isItemLastPage = true
-    private var isShowingLicenses by mutableStateOf(false)
     private lateinit var authRepository: AuthRepository
     private lateinit var qiitaRepository: QiitaRepository
     private lateinit var qiitaTokenPreferences: QiitaTokenPreferences
@@ -65,22 +69,30 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            if (isShowingLicenses) {
-                LicenseScreen(
-                    onBackClick = { isShowingLicenses = false },
-                )
-            } else {
-                TimelineScreen(
-                    itemFlow = items,
-                    authenticatedUserFlow = authenticatedUser,
-                    isRefreshingFlow = isRefreshingItems,
-                    onRefresh = ::refreshItems,
-                    onLoadMore = ::loadNextItemPage,
-                    onShowFolloweeItems = ::showFolloweeItems,
-                    onShowFollowingTagItems = ::showFollowingTagItems,
-                    onShowQueryItems = ::showQueryItems,
-                    onLicensesClick = { isShowingLicenses = true },
-                )
+            val navController = rememberNavController()
+
+            NavHost(
+                navController = navController,
+                startDestination = Route.TIMELINE,
+            ) {
+                composable(Route.TIMELINE) {
+                    TimelineScreen(
+                        itemFlow = items,
+                        authenticatedUserFlow = authenticatedUser,
+                        isRefreshingFlow = isRefreshingItems,
+                        onRefresh = ::refreshItems,
+                        onLoadMore = ::loadNextItemPage,
+                        onShowFolloweeItems = ::showFolloweeItems,
+                        onShowFollowingTagItems = ::showFollowingTagItems,
+                        onShowQueryItems = ::showQueryItems,
+                        onLicensesClick = { navController.navigate(Route.LICENSES) },
+                    )
+                }
+                composable(Route.LICENSES) {
+                    LicenseScreen(
+                        onBackClick = { navController.popBackStack() },
+                    )
+                }
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.abplua.qiitare.data.repositories
 
+import com.abplua.qiitare.OAuthConfig
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -164,8 +165,8 @@ class AuthRepository(
 
     companion object {
         private const val BASE_URL = "https://qiita.com/api/v2"
-        private const val OAUTH_CLIENT_ID = "4dddfc67c0f429370a32390e072f684a3a0616c6"
-        private const val OAUTH_SECRET = "06d27bdd9aa17db432d4cd7f42ed604e3962ae0d"
+        private val OAUTH_CLIENT_ID get() = OAuthConfig.clientId
+        private val OAUTH_SECRET get() = OAuthConfig.clientSecret
         private const val OAUTH_SCOPE = "read_qiita"
         private const val OAUTH_STATE = ""
         private const val OAUTH_REDIRECT_URL = "qiitare://oauth/callback"

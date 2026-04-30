@@ -125,7 +125,7 @@ class QiitaRepositoryTest {
     }
 
     @Test
-    fun getAuthenticatedUser_throwsWhenQiitaReturnsError() = runTest {
+    fun getAuthenticatedUser_throwsInvalidAccessTokenWhenQiitaReturnsUnauthorized() = runTest {
         val repository = QiitaRepository(
             httpClient = testHttpClient(
                 MockEngine {
@@ -138,12 +138,36 @@ class QiitaRepositoryTest {
             )
         )
 
-        val error = assertFailsWith<IllegalStateException> {
+        val error = assertFailsWith<QiitaRepository.InvalidAccessTokenException> {
             repository.getAuthenticatedUser("invalid-token")
         }
 
         assertEquals(
-            """Qiita authenticated user request failed: 401 Unauthorized. {"message":"Unauthorized","type":"unauthorized"}""",
+            """Qiita access token is invalid. {"message":"Unauthorized","type":"unauthorized"}""",
+            error.message,
+        )
+    }
+
+    @Test
+    fun getAuthenticatedUser_throwsWhenQiitaReturnsNonUnauthorizedError() = runTest {
+        val repository = QiitaRepository(
+            httpClient = testHttpClient(
+                MockEngine {
+                    respond(
+                        content = """{"message":"Rate limit exceeded","type":"rate_limit_exceeded"}""",
+                        status = HttpStatusCode.TooManyRequests,
+                        headers = headersOf("Content-Type", ContentType.Application.Json.toString()),
+                    )
+                }
+            )
+        )
+
+        val error = assertFailsWith<IllegalStateException> {
+            repository.getAuthenticatedUser("access-token")
+        }
+
+        assertEquals(
+            """Qiita authenticated user request failed: 429 Too Many Requests. {"message":"Rate limit exceeded","type":"rate_limit_exceeded"}""",
             error.message,
         )
     }

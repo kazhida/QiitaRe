@@ -13,6 +13,7 @@ import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpStatusCode
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.serialization.json.Json
 
@@ -57,6 +58,9 @@ class QiitaRepository(
 
         if (response.status.value !in 200..299) {
             val body = runCatching { response.body<String>() }.getOrDefault("")
+            if (response.status == HttpStatusCode.Unauthorized) {
+                throw InvalidAccessTokenException(body)
+            }
             throw IllegalStateException(
                 "Qiita authenticated user request failed: ${response.status.value} ${response.status.description}. $body"
                     .trim()
@@ -121,4 +125,8 @@ class QiitaRepository(
             }
         }
     }
+
+    class InvalidAccessTokenException(responseBody: String) : IllegalStateException(
+        "Qiita access token is invalid. $responseBody".trim()
+    )
 }

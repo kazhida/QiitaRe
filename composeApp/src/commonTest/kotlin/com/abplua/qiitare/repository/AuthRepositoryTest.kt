@@ -1,5 +1,6 @@
 package com.abplua.qiitare.repository
 
+import com.abplua.qiitare.OAuthConfig
 import com.abplua.qiitare.data.repositories.AuthRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
@@ -36,7 +37,7 @@ class AuthRepositoryTest {
         )
 
         assertEquals(
-            "https://qiita.com/api/v2/oauth/authorize?client_id=4dddfc67c0f429370a32390e072f684a3a0616c6&scope=read_qiita&state=",
+            "https://qiita.com/api/v2/oauth/authorize?client_id=${OAuthConfig.clientId}&scope=read_qiita&state=",
             repository.oauthAuthorize()
         )
     }

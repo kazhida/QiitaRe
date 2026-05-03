@@ -49,6 +49,9 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import qiitare.composeapp.generated.resources.Res
 
+const val QUERY_STOCKED = "stocked"
+const val QUERY_OWNERS = "owners"
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TimelineScreen(
@@ -60,6 +63,8 @@ fun TimelineScreen(
     onShowFolloweeItems: () -> Unit,
     onShowFollowingTagItems: () -> Unit,
     onShowQueryItems: (String) -> Unit,
+    onShowStockItems: (userId: String) -> Unit,
+    onShowOwnItems: (userId: String) -> Unit,
     onLicensesClick: () -> Unit,
     onArticleClick: (Article) -> Unit,
 ) {
@@ -109,6 +114,20 @@ fun TimelineScreen(
                         },
                     ),
                 )
+                NavigationDrawerItem(
+                    label = { Text("自分の投稿") },
+                    selected = false,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.LocalOffer,
+                            contentDescription = null,
+                        )
+                    },
+                    onClick = {
+                        onShowOwnItems(authenticatedUserFlow.value?.id ?: "")
+                        closeDrawer()
+                    },
+                )
 
                 NavigationDrawerItem(
                     label = { Text("フォローしているユーザの投稿") },
@@ -135,6 +154,20 @@ fun TimelineScreen(
                     },
                     onClick = {
                         onShowFollowingTagItems()
+                        closeDrawer()
+                    },
+                )
+                NavigationDrawerItem(
+                    label = { Text("ストックしている投稿") },
+                    selected = false,
+                    icon = {
+                        Icon(
+                            imageVector = Icons.Filled.LocalOffer,
+                            contentDescription = null,
+                        )
+                    },
+                    onClick = {
+                        onShowStockItems(authenticatedUserFlow.value?.id ?: "")
                         closeDrawer()
                     },
                 )

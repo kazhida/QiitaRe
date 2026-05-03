@@ -4,6 +4,8 @@ import com.abplua.qiitare.data.models.AuthenticatedUser
 import com.abplua.qiitare.data.models.FollowingTag
 import com.abplua.qiitare.data.models.Article
 import com.abplua.qiitare.data.models.User
+import com.abplua.qiitare.ui.screens.QUERY_OWNERS
+import com.abplua.qiitare.ui.screens.QUERY_STOCKED
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
@@ -11,6 +13,7 @@ import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
 import io.ktor.client.request.parameter
+import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
@@ -26,6 +29,19 @@ class QiitaRepository(
         require(page in 1..100) { "page must be between 1 and 100." }
         require(perPage in 1..100) { "perPage must be between 1 and 100." }
 
+        // 特別なクエリ
+        if (query != null) {
+            val queryType = query.split(";").firstOrNull()
+            val userId = query.split(";").getOrNull(1)
+            if (queryType != null && userId != null) {
+                return when (queryType) {
+                    QUERY_STOCKED -> getStockedItems(userId, page, perPage)
+                    QUERY_OWNERS -> getOwnedItems(userId, page, perPage)
+                    else -> error("Invalid query type: $query")
+                }
+            }
+        }
+
         val response = httpClient.get("$baseUrl/items") {
             accept(ContentType.Application.Json)
             parameter("page", page)
@@ -33,6 +49,48 @@ class QiitaRepository(
             if (!query.isNullOrBlank()) {
                 parameter("query", query)
             }
+        }
+
+        if (response.status.value !in 200..299) {
+            val body = runCatching { response.body<String>() }.getOrDefault("")
+            throw IllegalStateException(
+                "Qiita items request failed: ${response.status.value} ${response.status.description}. $body"
+                    .trim()
+            )
+        }
+
+        return response.body<List<Article>>()
+    }
+
+    suspend fun getStockedItems(userId: String, page: Int = 1, perPage: Int = 20): List<Article> {
+        require(page in 1..100) { "page must be between 1 and 100." }
+        require(perPage in 1..100) { "perPage must be between 1 and 100." }
+
+        val response = httpClient.get("$baseUrl/users/$userId/stocks") {
+            accept(ContentType.Application.Json)
+            parameter("page", page)
+            parameter("per_page", perPage)
+        }
+
+        if (response.status.value !in 200..299) {
+            val body = runCatching { response.body<String>() }.getOrDefault("")
+            throw IllegalStateException(
+                "Qiita stocks request failed: ${response.status.value} ${response.status.description}. $body"
+                    .trim()
+            )
+        }
+
+        return response.body<List<Article>>()
+    }
+
+    suspend fun getOwnedItems(userId: String, page: Int = 1, perPage: Int = 20): List<Article> {
+        require(page in 1..100) { "page must be between 1 and 100." }
+        require(perPage in 1..100) { "perPage must be between 1 and 100." }
+
+        val response = httpClient.get("$baseUrl/users/$userId/items") {
+            accept(ContentType.Application.Json)
+            parameter("page", page)
+            parameter("per_page", perPage)
         }
 
         if (response.status.value !in 200..299) {

@@ -23,6 +23,8 @@ import com.abplua.qiitare.data.repositories.QiitaRepository
 import com.abplua.qiitare.ui.App
 import com.abplua.qiitare.ui.screens.ArticleScreen
 import com.abplua.qiitare.ui.screens.LicenseScreen
+import com.abplua.qiitare.ui.screens.QUERY_OWNERS
+import com.abplua.qiitare.ui.screens.QUERY_STOCKED
 import com.abplua.qiitare.ui.screens.TimelineScreen
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CancellationException
@@ -96,6 +98,8 @@ class MainActivity : ComponentActivity() {
                         onShowFolloweeItems = ::showFolloweeItems,
                         onShowFollowingTagItems = ::showFollowingTagItems,
                         onShowQueryItems = ::showQueryItems,
+                        onShowStockItems = ::showStockItems,
+                        onShowOwnItems = ::showOwnItems,
                         onLicensesClick = { navController.navigate(Route.LICENSES) },
                         onArticleClick = { article ->
                             selectedArticle = article
@@ -193,6 +197,14 @@ class MainActivity : ComponentActivity() {
 
     private fun showFollowingTagItems() {
         _itemQuery.value = followingTagItemQuery
+    }
+
+    private fun showStockItems(userId: String) {
+        _itemQuery.value = "$QUERY_STOCKED;$userId"
+    }
+
+    private fun showOwnItems(userId: String) {
+        _itemQuery.value = "$QUERY_OWNERS;$userId"
     }
 
     private fun showQueryItems(query: String) {

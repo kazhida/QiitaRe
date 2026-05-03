@@ -39,6 +39,8 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.filled.Bookmarks
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.abplua.qiitare.data.models.AuthenticatedUser
@@ -119,7 +121,7 @@ fun TimelineScreen(
                     selected = false,
                     icon = {
                         Icon(
-                            imageVector = Icons.Filled.LocalOffer,
+                            imageVector = Icons.Filled.Description,
                             contentDescription = null,
                         )
                     },
@@ -162,7 +164,7 @@ fun TimelineScreen(
                     selected = false,
                     icon = {
                         Icon(
-                            imageVector = Icons.Filled.LocalOffer,
+                            imageVector = Icons.Filled.Bookmarks,
                             contentDescription = null,
                         )
                     },

@@ -259,7 +259,11 @@ class MainActivity : ComponentActivity() {
             throw error
         } catch (error: Throwable) {
             if (itemQuery.value == query) {
-                Log.e(TAG, "Failed to get Qiita items.", error)
+                if (error is QiitaRepository.InvalidAccessTokenException) {
+                    handleInvalidAccessToken(error)
+                } else {
+                    Log.e(TAG, "Failed to get Qiita items.", error)
+                }
             }
         } finally {
             if (itemQuery.value == query) {

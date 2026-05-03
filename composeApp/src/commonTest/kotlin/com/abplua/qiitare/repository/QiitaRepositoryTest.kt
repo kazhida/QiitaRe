@@ -85,6 +85,30 @@ class QiitaRepositoryTest {
     }
 
     @Test
+    fun getItems_throwsInvalidAccessTokenWhenQiitaReturnsForbidden() = runTest {
+        val repository = QiitaRepository(
+            httpClient = testHttpClient(
+                MockEngine {
+                    respond(
+                        content = """{"message":"Forbidden","type":"forbidden"}""",
+                        status = HttpStatusCode.Forbidden,
+                        headers = headersOf("Content-Type", ContentType.Application.Json.toString()),
+                    )
+                }
+            )
+        )
+
+        val error = assertFailsWith<QiitaRepository.InvalidAccessTokenException> {
+            repository.getItems()
+        }
+
+        assertEquals(
+            """Qiita access token is invalid. {"message":"Forbidden","type":"forbidden"}""",
+            error.message,
+        )
+    }
+
+    @Test
     fun getItems_validatesPagingRange() = runTest {
         val repository = QiitaRepository(
             httpClient = testHttpClient(MockEngine {
@@ -144,6 +168,30 @@ class QiitaRepositoryTest {
 
         assertEquals(
             """Qiita access token is invalid. {"message":"Unauthorized","type":"unauthorized"}""",
+            error.message,
+        )
+    }
+
+    @Test
+    fun getAuthenticatedUser_throwsInvalidAccessTokenWhenQiitaReturnsForbidden() = runTest {
+        val repository = QiitaRepository(
+            httpClient = testHttpClient(
+                MockEngine {
+                    respond(
+                        content = """{"message":"Forbidden","type":"forbidden"}""",
+                        status = HttpStatusCode.Forbidden,
+                        headers = headersOf("Content-Type", ContentType.Application.Json.toString()),
+                    )
+                }
+            )
+        )
+
+        val error = assertFailsWith<QiitaRepository.InvalidAccessTokenException> {
+            repository.getAuthenticatedUser("forbidden-token")
+        }
+
+        assertEquals(
+            """Qiita access token is invalid. {"message":"Forbidden","type":"forbidden"}""",
             error.message,
         )
     }

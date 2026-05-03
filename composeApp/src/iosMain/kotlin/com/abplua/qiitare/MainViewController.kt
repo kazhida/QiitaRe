@@ -256,7 +256,11 @@ private class IosAppState(
             throw error
         } catch (error: Throwable) {
             if (itemQuery.value == query) {
-                println("Failed to get Qiita items. ${error.message}")
+                if (error is QiitaRepository.InvalidAccessTokenException) {
+                    handleInvalidAccessToken(error)
+                } else {
+                    println("Failed to get Qiita items. ${error.message}")
+                }
             }
         } finally {
             if (itemQuery.value == query) {

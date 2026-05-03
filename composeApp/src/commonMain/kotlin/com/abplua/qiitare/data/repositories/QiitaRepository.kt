@@ -1,14 +1,15 @@
 package com.abplua.qiitare.data.repositories
 
+import com.abplua.qiitare.data.models.Article
 import com.abplua.qiitare.data.models.AuthenticatedUser
 import com.abplua.qiitare.data.models.FollowingTag
-import com.abplua.qiitare.data.models.Article
 import com.abplua.qiitare.data.models.User
 import com.abplua.qiitare.ui.screens.QUERY_OWNERS
 import com.abplua.qiitare.ui.screens.QUERY_STOCKED
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.headers
@@ -26,13 +27,12 @@ class QiitaRepository(
 ) {
 
     suspend fun getItems(page: Int = 1, perPage: Int = 20, query: String? = null): List<Article> {
-        require(page in 1..100) { "page must be between 1 and 100." }
-        require(perPage in 1..100) { "perPage must be between 1 and 100." }
+        validatePaging(page, perPage)
 
         // 特別なクエリ
-        if (query != null) {
-            val queryType = query.split(";").firstOrNull()
-            val userId = query.split(";").getOrNull(1)
+        query?.split(";")?.let { queryParts ->
+            val queryType = queryParts.firstOrNull()
+            val userId = queryParts.getOrNull(1)
             if (queryType != null && userId != null) {
                 return when (queryType) {
                     QUERY_STOCKED -> getStockedItems(userId, page, perPage)
@@ -42,66 +42,21 @@ class QiitaRepository(
             }
         }
 
-        val response = httpClient.get("$baseUrl/items") {
-            accept(ContentType.Application.Json)
-            parameter("page", page)
-            parameter("per_page", perPage)
+        return getPagedJson("items", "items", page, perPage) {
             if (!query.isNullOrBlank()) {
                 parameter("query", query)
             }
         }
-
-        if (response.status.value !in 200..299) {
-            val body = runCatching { response.body<String>() }.getOrDefault("")
-            throw IllegalStateException(
-                "Qiita items request failed: ${response.status.value} ${response.status.description}. $body"
-                    .trim()
-            )
-        }
-
-        return response.body<List<Article>>()
     }
 
     suspend fun getStockedItems(userId: String, page: Int = 1, perPage: Int = 20): List<Article> {
-        require(page in 1..100) { "page must be between 1 and 100." }
-        require(perPage in 1..100) { "perPage must be between 1 and 100." }
-
-        val response = httpClient.get("$baseUrl/users/$userId/stocks") {
-            accept(ContentType.Application.Json)
-            parameter("page", page)
-            parameter("per_page", perPage)
-        }
-
-        if (response.status.value !in 200..299) {
-            val body = runCatching { response.body<String>() }.getOrDefault("")
-            throw IllegalStateException(
-                "Qiita stocks request failed: ${response.status.value} ${response.status.description}. $body"
-                    .trim()
-            )
-        }
-
-        return response.body<List<Article>>()
+        validatePaging(page, perPage)
+        return getUserPagedJson(userId, "stocks", "stocks", page, perPage)
     }
 
     suspend fun getOwnedItems(userId: String, page: Int = 1, perPage: Int = 20): List<Article> {
-        require(page in 1..100) { "page must be between 1 and 100." }
-        require(perPage in 1..100) { "perPage must be between 1 and 100." }
-
-        val response = httpClient.get("$baseUrl/users/$userId/items") {
-            accept(ContentType.Application.Json)
-            parameter("page", page)
-            parameter("per_page", perPage)
-        }
-
-        if (response.status.value !in 200..299) {
-            val body = runCatching { response.body<String>() }.getOrDefault("")
-            throw IllegalStateException(
-                "Qiita items request failed: ${response.status.value} ${response.status.description}. $body"
-                    .trim()
-            )
-        }
-
-        return response.body<List<Article>>()
+        validatePaging(page, perPage)
+        return getUserPagedJson(userId, "items", "items", page, perPage)
     }
 
     suspend fun getAuthenticatedUser(accessToken: String): AuthenticatedUser {
@@ -116,7 +71,7 @@ class QiitaRepository(
 
         if (response.status.value !in 200..299) {
             val body = runCatching { response.body<String>() }.getOrDefault("")
-            if (response.status == HttpStatusCode.Unauthorized) {
+            if (response.status.isAuthenticationRecoveryStatus()) {
                 throw InvalidAccessTokenException(body)
             }
             throw IllegalStateException(
@@ -130,46 +85,61 @@ class QiitaRepository(
 
     suspend fun getFollowees(userId: String, page: Int = 1, perPage: Int = 100): List<User> {
         require(userId.isNotBlank()) { "userId must not be blank." }
-        require(page in 1..100) { "page must be between 1 and 100." }
-        require(perPage in 1..100) { "perPage must be between 1 and 100." }
-
-        val response = httpClient.get("$baseUrl/users/$userId/followees") {
-            accept(ContentType.Application.Json)
-            parameter("page", page)
-            parameter("per_page", perPage)
-        }
-
-        if (response.status.value !in 200..299) {
-            val body = runCatching { response.body<String>() }.getOrDefault("")
-            throw IllegalStateException(
-                "Qiita followees request failed: ${response.status.value} ${response.status.description}. $body"
-                    .trim()
-            )
-        }
-
-        return response.body<List<User>>()
+        validatePaging(page, perPage)
+        return getUserPagedJson(userId, "followees", "followees", page, perPage)
     }
 
     suspend fun getFollowingTags(userId: String, page: Int = 1, perPage: Int = 100): List<FollowingTag> {
         require(userId.isNotBlank()) { "userId must not be blank." }
-        require(page in 1..100) { "page must be between 1 and 100." }
-        require(perPage in 1..100) { "perPage must be between 1 and 100." }
+        validatePaging(page, perPage)
+        return getUserPagedJson(userId, "following_tags", "following tags", page, perPage)
+    }
 
-        val response = httpClient.get("$baseUrl/users/$userId/following_tags") {
+    private suspend inline fun <reified T> getPagedJson(
+        path: String,
+        requestName: String,
+        page: Int,
+        perPage: Int,
+        crossinline block: HttpRequestBuilder.() -> Unit = {},
+    ): T {
+        val response = httpClient.get("$baseUrl/$path") {
             accept(ContentType.Application.Json)
             parameter("page", page)
             parameter("per_page", perPage)
+            block()
         }
+        response.throwIfFailed(requestName)
+        return response.body()
+    }
 
-        if (response.status.value !in 200..299) {
-            val body = runCatching { response.body<String>() }.getOrDefault("")
-            throw IllegalStateException(
-                "Qiita following tags request failed: ${response.status.value} ${response.status.description}. $body"
-                    .trim()
-            )
+    private suspend inline fun <reified T> getUserPagedJson(
+        userId: String,
+        resourcePath: String,
+        requestName: String,
+        page: Int,
+        perPage: Int,
+    ): T = getPagedJson("users/$userId/$resourcePath", requestName, page, perPage)
+
+    private fun validatePaging(page: Int, perPage: Int) {
+        require(page in 1..100) { "page must be between 1 and 100." }
+        require(perPage in 1..100) { "perPage must be between 1 and 100." }
+    }
+
+    private suspend fun HttpResponse.throwIfFailed(requestName: String) {
+        if (status.value in 200..299) return
+
+        val body = runCatching { body<String>() }.getOrDefault("")
+        if (status.isAuthenticationRecoveryStatus()) {
+            throw InvalidAccessTokenException(body)
         }
+        throw IllegalStateException(
+            "Qiita $requestName request failed: ${status.value} ${status.description}. $body"
+                .trim()
+        )
+    }
 
-        return response.body<List<FollowingTag>>()
+    private fun HttpStatusCode.isAuthenticationRecoveryStatus(): Boolean {
+        return this == HttpStatusCode.Unauthorized || this == HttpStatusCode.Forbidden
     }
 
     companion object {

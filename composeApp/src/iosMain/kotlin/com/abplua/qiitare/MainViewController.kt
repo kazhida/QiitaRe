@@ -15,6 +15,8 @@ import com.abplua.qiitare.data.repositories.AuthRepository
 import com.abplua.qiitare.data.repositories.QiitaRepository
 import com.abplua.qiitare.ui.screens.ArticleScreen
 import com.abplua.qiitare.ui.screens.LicenseScreen
+import com.abplua.qiitare.ui.screens.QUERY_OWNERS
+import com.abplua.qiitare.ui.screens.QUERY_STOCKED
 import com.abplua.qiitare.ui.screens.TimelineScreen
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -69,6 +71,8 @@ private fun IosApp() {
                     selectedArticle = article
                     route = Route.ARTICLE
                 },
+                onShowStockItems = appState::showStockItems,
+                onShowOwnItems = appState::showOwnItems,
             )
 
             Route.ARTICLE -> {
@@ -143,6 +147,16 @@ private class IosAppState(
     fun showFollowingTagItems() {
         _itemQuery.value = followingTagItemQuery
     }
+
+    fun showStockItems(userId: String) {
+        _itemQuery.value = "$QUERY_STOCKED;$userId"
+    }
+
+    fun showOwnItems(userId: String) {
+        _itemQuery.value = "$QUERY_OWNERS;$userId"
+    }
+
+
 
     fun showQueryItems(query: String) {
         _itemQuery.value = query.ifBlank { null }
